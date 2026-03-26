@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interior Door Configurator | SimplyDoors</title>
+    <style>
+        :root {
+            --brand-dark: #0f172a; --brand-primary: #059669; --brand-accent: #10b981;
+            --bg-page: #f8fafc; --bg-card: #ffffff; --text-main: #334155;
+            --text-muted: #64748b; --border-color: #e2e8f0; --selection-bg: #ecfdf5;
+            --warning: #ea580c; --danger: #ef4444;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-page); color: var(--text-main); margin: 0; padding: 0; padding-bottom: 120px; }
+        
+        .brand-header { background-color: var(--brand-dark); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--brand-primary); position: sticky; top:0; z-index: 100; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);}
+        .nav-controls button { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 8px 15px; font-weight: 600; cursor: pointer; margin-left: 10px; transition: 0.2s;}
+        .nav-controls button:hover { background: rgba(255,255,255,0.2); }
+        .nav-controls button.primary { background: var(--brand-primary); border-color: var(--brand-accent); }
+        
+        .layout-wrapper { max-width: 1600px; margin: 20px auto; padding: 0 20px; display: grid; grid-template-columns: 280px minmax(0, 1fr) 350px; gap: 20px; align-items: start; }
+        
+        .config-panel { background: white; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 4px 6px -4px rgba(0,0,0,0.05); }
+        .panel-header { background: #f1f5f9; padding: 12px 20px; font-weight: 700; color: var(--brand-dark); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; gap: 8px;}
+        .panel-header.margin-header { background-color: var(--brand-dark); color: white; border-bottom: 2px solid var(--warning); }
+        .panel-body { padding: 20px; }
+        
+        .pill-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+        .pill-group-title { width: 100%; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; }
+        .pill { border: 2px solid var(--border-color); border-radius: 6px; padding: 10px 15px; cursor: pointer; font-weight: 600; color: var(--text-main); transition: 0.2s; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 0.95rem; }
+        .pill:hover { border-color: #cbd5e1; background: #f8fafc; }
+        .pill.selected { border-color: var(--brand-primary); background: var(--selection-bg); color: var(--brand-dark); }
+        
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .input-group { display: flex; flex-direction: column; margin-bottom: 15px;}
+        .input-group label { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+        .input-group select, .input-group input { padding: 10px; border: 2px solid var(--border-color); border-radius: 6px; font-size: 1rem; font-weight: 600; outline: none; transition: 0.2s; background: white;}
+        .input-group select:focus, .input-group input:focus { border-color: var(--brand-primary); }
+        
+        .checkbox-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+        .checkbox-item { display: flex; align-items: center; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; transition: all 0.2s; cursor: pointer; background: #fafaf9; }
+        .checkbox-item:hover { border-color: var(--brand-primary); background: white; }
+        .checkbox-item input { margin-right: 12px; transform: scale(1.2); accent-color: var(--brand-primary); cursor: pointer;}
+        .checkbox-item span { flex-grow: 1; font-size: 0.9rem; font-weight: 600; color: var(--text-main); }
+        .cost-badge { background: #e2e8f0; color: var(--text-main); padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; font-family: monospace; }
+
+        .alert { background-color: #fef2f2; color: #991b1b; padding: 12px; border-radius: 6px; margin-bottom: 15px; display: none; font-size: 0.9rem; font-weight: 600; border: 1px solid #f87171; text-align: center; }
+        
+        /* Availability Badges */
+        .avail-badge { padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 700; margin-top: 5px; display: none; text-align: center; }
+        .avail-cut { background: #fef08a; color: #854d0e; border: 1px solid #fde047; }
+        .avail-call { background: #fed7aa; color: #9a3412; border: 1px solid #fdba74; }
+
+        /* --- Visual Preview Panel --- */
+        .preview-panel { position: sticky; top: 85px; background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 15px -3px rgba(0,0,0,0.1); }
+        .door-stage { width: 160px; height: 320px; border: 4px solid var(--brand-dark); background: #f1f5f9; position: relative; margin: 20px 0; display: flex; box-sizing: border-box; transition: 0.3s;}
+        .door-slab { flex: 1; border: 1px solid #cbd5e1; background: white; position: relative; margin: 2px; display: flex; flex-direction: column; padding: 10px 15px; gap: 10px; box-sizing: border-box;}
+        .door-slab.bifold::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; border-left: 1px dashed #94a3b8; transform: translateX(-50%); }
+        .door-panel-detail { flex: 1; border: 1px solid #e2e8f0; border-radius: 2px; background: #f8fafc; }
+        .door-knob { width: 12px; height: 12px; background: var(--warning); border-radius: 50%; position: absolute; top: 50%; transform: translateY(-50%); box-shadow: 1px 1px 3px rgba(0,0,0,0.3); z-index: 2;}
+        .knob-left { left: 8px; }
+        .knob-right { right: 8px; }
+        
+        /* CSS Door Shapes */
+        .shape-6p { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1.5fr 1fr; gap: 6px; padding: 15px 10px; }
+        .shape-4p { display: flex; flex-direction: column; gap: 8px; padding: 15px; }
+        .shape-3peq { display: flex; flex-direction: column; gap: 10px; padding: 15px; }
+        .shape-3psh { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 2fr; gap: 8px; padding: 15px; }
+        .shape-3psh .door-panel-detail:first-child { grid-column: 1 / -1; }
+        .shape-2p { display: flex; flex-direction: column; gap: 15px; padding: 15px; }
+        .shape-2p .door-panel-detail:first-child { flex: 2; }
+        .shape-2p .door-panel-detail:last-child { flex: 1; }
+        .shape-1p { display: flex; padding: 15px; }
+        .shape-flush { padding: 0; background: #f8fafc; border: none; }
+        .roundtop { border-top-left-radius: 50% 15px; border-top-right-radius: 50% 15px; }
+        .archtop { border-top-left-radius: 50% 10px; border-top-right-radius: 50% 10px; }
+
+        .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; width: 100%; box-sizing: border-box; margin-bottom: 10px;}
+        .status-stock { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .status-special { background: #fef08a; color: #9a3412; border: 1px solid #fde047; }
+        .status-invalid { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+        .dynamic-sku { font-family: monospace; font-size: 1.1rem; font-weight: bold; color: var(--brand-dark); text-align: center; padding: 10px; background: #f1f5f9; border-radius: 6px; width: 100%; box-sizing: border-box; border: 1px dashed #cbd5e1;}
+
+        .btn-add { background: var(--brand-primary); color: white; border: none; padding: 15px; width: 100%; font-size: 1.1rem; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 15px;}
+        .btn-add:hover { background: var(--brand-accent); transform: translateY(-2px);}
+        .btn-add:active { transform: translateY(0);}
+
+        /* Sidebar Cart Widget */
+        .sidebar-cart { position: sticky; top: 85px; background: white; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; max-height: calc(100vh - 100px); }
+        .sidebar-header { background: var(--brand-dark); color: white; padding: 15px; font-weight: 700; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;}
+        .sidebar-scroll-area { overflow-y: auto; flex: 1; padding: 15px; background: #fafaf9; }
+        .cart-item { background: white; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); border-left: 4px solid var(--brand-primary); }
+        .cart-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .cart-item-price { font-weight: 800; color: var(--brand-dark); font-size: 1.1rem; }
+        .cart-item-qty { background: #e2e8f0; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; color: var(--text-main); }
+        .cart-item-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 10px; max-height: 80px; overflow-y: auto; padding: 5px; background: #f8fafc; border-radius: 4px; border: 1px solid #e2e8f0;}
+        .edit-room-input { width: 100%; box-sizing: border-box; padding: 6px 10px; font-size: 0.85rem; border: 1px solid #cbd5e1; border-radius: 4px; margin-bottom: 10px; font-weight: 600; color: var(--brand-primary); background: #f0fdf4; outline: none; transition: 0.2s;}
+        .edit-room-input:focus { border-color: var(--brand-primary); box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.1); }
+        .cart-item-actions { display: flex; gap: 8px; border-top: 1px dashed var(--border-color); padding-top: 10px;}
+        .action-btn { flex: 1; background: white; border: 1px solid var(--border-color); padding: 6px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.2s; color: var(--text-main); }
+        .action-btn:hover { background: #f1f5f9; }
+        .btn-delete { color: #ef4444; border-color: #fecaca; }
+        .btn-delete:hover { background: #fef2f2; }
+        .sidebar-footer { padding: 15px; border-top: 1px solid var(--border-color); background: white; border-radius: 0 0 8px 8px; text-align: center;}
+        
+        /* Full Quote Overlay/View */
+        .full-quote-view { max-width: 1200px; margin: 40px auto; padding: 0 20px; display: none; }
+        .quote-card { background: white; border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .quote-header { background: var(--brand-dark); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .quote-tabs { display: flex; background: #1e293b; padding: 10px 20px 0; gap: 5px; }
+        .quote-tab-btn { background: rgba(255,255,255,0.1); border: none; color: #cbd5e1; padding: 12px 25px; font-weight: 600; border-radius: 8px 8px 0 0; cursor: pointer; transition: 0.2s;}
+        .quote-tab-btn.active { background: white; color: var(--brand-dark); }
+        .quote-content { padding: 30px; }
+        .order-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+        .order-table th { background: #f1f5f9; color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 0.8rem; padding: 12px 15px; text-align: left; border-bottom: 2px solid var(--border-color);}
+        .order-table td { padding: 15px; border-bottom: 1px solid var(--border-color); vertical-align: top; }
+        .btn-copy { background: #f1f5f9; border: 1px solid #cbd5e1; color: var(--text-main); padding: 6px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 0.5px;}
+        .btn-copy:hover { background: #e2e8f0; }
+        .btn-copy.copied { background: var(--brand-primary); color: white; border-color: var(--brand-accent); }
+        .btn-copy-all { background: var(--brand-primary); color: white; border: none; padding: 8px 15px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-copy-all:hover { background: var(--brand-accent); }
+
+        .hidden { display: none !important; }
+        #toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 12px 25px; border-radius: 30px; font-weight: bold; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15);}
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+
+        @media (max-width: 1200px) {
+            .layout-wrapper { grid-template-columns: 1fr; }
+            .preview-panel, .sidebar-cart { position: relative; top: 0; max-height: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="brand-header">
+        <div style="font-size: 1.2rem; font-weight: 800;">Simply<span style="color:var(--brand-accent);">Doors</span> <span style="font-weight: 400; font-size:1rem; margin-left:10px; color:#cbd5e1;">| Interior Configurator</span></div>
+        <div class="nav-controls">
+            <button onclick="window.location.href='index.html'">Dashboard & Trim</button>
+            <button class="primary" id="btnToggleQuote" onclick="toggleFullQuote()">View Full Quote</button>
+        </div>
+    </header>
+
+    <div class="full-quote-view" id="fullQuoteView">
+        <div class="quote-card">
+            <div class="quote-header">
+                <h2 style="margin:0;">Project Quote Overview</h2>
+            </div>
+            <div class="quote-tabs">
+                <button class="quote-tab-btn active" id="tabCustomer" onclick="switchQuoteTab('customer')">Customer Facing Quote</button>
+                <button class="quote-tab-btn" id="tabProduction" onclick="switchQuoteTab('production')">Production BOM (Materials)</button>
+            </div>
+            
+            <div class="quote-content" id="contentCustomer">
+                <div style="display:flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="margin:0; color:var(--brand-dark);">Customer Proposal</h3>
+                        <p style="margin:5px 0 0; font-size:0.9rem; color:var(--text-muted);">Formatted descriptions and retail pricing.</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <button class="btn-copy-all" onclick="copyEntireTable('customerTable', this)" style="margin-bottom: 10px;">Copy Entire Quote</button>
+                        <div style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase; font-weight:bold;">Quote Total</div>
+                        <div id="fullQuoteGrandTotal" style="font-size:2rem; font-weight:800; color:var(--brand-accent); line-height:1;">$0.00</div>
+                    </div>
+                </div>
+                <table class="order-table" id="customerTable">
+                    <thead><tr><th style="width:60px;"></th><th>Room / Location</th><th>Description</th><th style="width:80px; text-align:center;">Qty</th><th style="width:100px; text-align:right;">Price</th><th style="width:100px; text-align:right;">Total</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="quote-content hidden" id="contentProduction">
+                <div style="display:flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="margin:0; color:var(--brand-dark);">Production Order (BOM)</h3>
+                        <p style="margin:5px 0 0; font-size:0.9rem; color:var(--text-muted);">Aggregated SKUs, Jambs, Stops, and Hardware required to build the configured units.</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <button class="btn-copy-all" onclick="copyEntireTable('productionTable', this)">Copy Entire BOM</button>
+                    </div>
+                </div>
+                <table class="order-table" id="productionTable">
+                    <thead><tr><th style="width:60px;"></th><th>Product / SKU Description</th><th style="width:120px; text-align:center;">Total Qty Needed</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="layout-wrapper" id="mainConfigView">
+        
+        <aside class="preview-panel">
+            <div id="stockStatusBadge" class="status-badge status-stock">In Stock</div>
+            
+            <div class="door-stage" id="doorStage"></div>
+
+            <div style="width: 100%; margin-bottom: 15px;">
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: bold; text-transform: uppercase; margin-bottom: 4px;">Generated SKU</div>
+                <div class="dynamic-sku" id="dynamicSkuDisplay">SM5P-2468-LH</div>
+            </div>
+            
+            <div style="width: 100%; border-top: 1px solid var(--border-color); padding-top: 15px; text-align: center;">
+                <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: bold; text-transform: uppercase;">Est. Customer Price</div>
+                <div id="calculatedPrice" style="font-size: 2.4rem; font-weight: 800; color: var(--brand-primary); line-height: 1; margin-top: 5px;">$0.00</div>
+                
+                <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.85rem; color: var(--text-muted);">
+                    <span>Cost: <strong id="floatingInternalCost" style="color: var(--text-main);">$0.00</strong></span>
+                    <span>Profit: <strong id="floatingProfit" style="color: var(--brand-accent);">+$0.00</strong></span>
+                </div>
+            </div>
+
+            <button class="btn-add" onclick="addToQuote()">+ Build & Add to Quote</button>
+        </aside>
+
+        <div class="main-content">
+            
+            <div class="config-panel">
+                <div class="panel-header margin-header">
+                    <span>Job Margin Configuration</span>
+                </div>
+                <div class="panel-body row" style="align-items: center;">
+                    <div class="input-group" style="margin:0;">
+                        <label style="color: var(--text-main);">Target Gross Margin (%)</label>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="number" id="marginPercent" value="30" step="1" min="0" max="99" style="text-align: center; font-size: 1.2rem; width: 100%; box-sizing: border-box;">
+                            <span style="position: absolute; right: 15px; font-weight: bold; color: var(--text-muted);">%</span>
+                        </div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Markup Equivalent</div>
+                        <div id="calculatedMarkup" style="font-weight:800; color:var(--warning); font-size:1.6rem; line-height: 1;">1.43x</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-panel">
+                <div class="panel-header" style="background: #1e293b; color: white;">1. Configuration Base</div>
+                <div class="panel-body row" style="padding-bottom: 5px;">
+                    <div>
+                        <div class="pill-group-title">Configuration</div>
+                        <div class="pill-group" id="configTypeGroup">
+                            <div class="pill selected" data-val="single">Single Door</div>
+                            <div class="pill" data-val="double">Double Door</div>
+                            <div class="pill" data-val="bifold">Bifold</div>
+                            <div class="pill" data-val="slab_only">Prepped Slab Only</div>
+                            <div class="pill" data-val="cased_opening">Cased Opening</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="pill-group-title">Unit Type</div>
+                        <div class="pill-group" id="unitTypeGroup">
+                            <div class="pill selected" data-val="prehung">Prehung</div>
+                            <div class="pill" data-val="frame_only">Frame Only</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-panel" id="dimensionsPanel">
+                <div class="panel-header">2. Dimensions</div>
+                <div class="panel-body row">
+                    <div class="input-group">
+                        <label>Door System Width</label>
+                        <select id="doorWidth"></select>
+                        <div id="availBadge" class="avail-badge"></div>
+                    </div>
+                    <div class="input-group">
+                        <label>Nominal Height</label>
+                        <div class="pill-group" id="doorHeightGroup" style="margin:0;">
+                            <div class="pill selected" data-val='68'>6'8"</div>
+                            <div class="pill" data-val='70'>7'0"</div>
+                            <div class="pill" data-val='80'>8'0"</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-panel" id="doorDesignPanel">
+                <div class="panel-header">3. Door Design Options</div>
+                <div class="panel-body">
+                    <div class="pill-group-title">Material Family</div>
+                    <div class="pill-group" id="materialGroup">
+                        <div class="pill selected" data-val="Molded">Molded Panel</div>
+                        <div class="pill" data-val="Flush">Flush Doors</div>
+                        <div class="pill" data-val="Simpson">Simpson MDF Shaker</div>
+                    </div>
+
+                    <div id="mouldedOptionsWrapper">
+                        <div class="pill-group-title">Style Shape</div>
+                        <div class="pill-group" id="shapeGroupMolded">
+                            <div class="pill" data-val="1 Panel Shaker">1 Panel Shaker</div>
+                            <div class="pill" data-val="2 Panel Shaker">2 Panel Shaker</div>
+                            <div class="pill" data-val="3 Panel Shaker">3 Panel Shaker</div>
+                            <div class="pill" data-val="3 Panel Equal Shaker">3 Panel Equal Shaker</div>
+                            <div class="pill" data-val="5 Panel Shaker">5 Panel Shaker</div>
+                            <div class="pill" data-val="6 Panel">6 Panel</div>
+                            <div class="pill" data-val="4 Panel">4 Panel</div>
+                            <div class="pill selected" data-val="5 Panel">5 Panel</div>
+                            <div class="pill" data-val="2 Panel Roundtop Plank">2 Panel Roundtop Plank</div>
+                            <div class="pill" data-val="2 Panel Roundtop">2 Panel Roundtop</div>
+                            <div class="pill" data-val="2 Panel Archtop">2 Panel Archtop</div>
+                            <div class="pill" data-val="2 Panel Squaretop">2 Panel Squaretop</div>
+                        </div>
+                    </div>
+
+                    <div id="flushOptionsWrapper" class="hidden">
+                        <div class="pill-group-title">Flush Material</div>
+                        <div class="pill-group" id="shapeGroupFlush">
+                            <div class="pill selected" data-val="Hardwood">Hardwood (Lauan)</div>
+                            <div class="pill" data-val="Birch">Birch</div>
+                            <div class="pill" data-val="Oak">Oak</div>
+                            <div class="pill" data-val="Primed Hardboard">Primed Hardboard</div>
+                            <div class="pill" data-val="Primed Embossed">Primed Embossed</div>
+                        </div>
+                    </div>
+
+                    <div id="simpsonOptionsWrapper" class="hidden">
+                        <div class="pill-group-title">Simpson Shaker Style</div>
+                        <div class="pill-group" id="shapeGroupSimpson">
+                            <div class="pill selected" data-val="1 Panel Shaker">1 Panel Shaker</div>
+                            <div class="pill" data-val="2 Panel Shaker">2 Panel Shaker</div>
+                            <div class="pill" data-val="3 Panel Equal Shaker">3 Panel Equal Shaker</div>
+                            <div class="pill" data-val="3 Panel Craftsman Shaker">3 Panel Craftsman Shaker</div>
+                            <div class="pill" data-val="5 Panel Shaker">5 Panel Shaker</div>
+                        </div>
+                    </div>
+
+                    <div id="standardCoreWrapper">
+                        <div class="pill-group-title" style="margin-top: 15px;">Core Type</div>
+                        <div class="pill-group" id="coreGroup">
+                            <div class="pill selected" data-val="HC">Hollow Core</div>
+                            <div class="pill" data-val="SC">Solid Core</div>
+                        </div>
+                    </div>
+
+                    <div id="simpsonThicknessWrapper" class="hidden">
+                        <div class="pill-group-title" style="margin-top: 15px;">Thickness & Rating</div>
+                        <div class="pill-group" id="simpsonThicknessGroup">
+                            <div class="pill selected" data-val="1-3/8_std">1-3/8" Standard</div>
+                            <div class="pill" data-val="1-3/4_std">1-3/4" Standard Solid</div>
+                            <div class="pill" data-val="1-3/4_20min">1-3/4" 20-Min Fire Rated</div>
+                        </div>
+                    </div>
+
+                    <div class="row" style="margin-top: 15px;">
+                        <div class="input-group">
+                            <label>Purchasing Tier</label>
+                            <select id="purchaseType">
+                                <option value="jobLot">Standard / Job Lot (Brkn Pallet)</option>
+                                <option value="pallet">Warehouse Full Pallet</option>
+                                <option value="drop">Drop / Container</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="prehungPanels">
+                <div class="config-panel" id="frameTrimPanel">
+                    <div class="panel-header">4. Frame & Trim Options</div>
+                    <div class="panel-body row">
+                        <div class="input-group">
+                            <label>Frame Size & Material</label>
+                            <select id="frameSize">
+                                <option value='4-9/16" Finger Joint Pine Flat Jamb'>4-9/16" Finger Joint Pine Flat Jamb</option>
+                                <option value='4-7/8" Finger Joint Pine Flat Jamb'>4-7/8" Finger Joint Pine Flat Jamb</option>
+                                <option value='6-9/16" Finger Joint Pine Flat Jamb'>6-9/16" Finger Joint Pine Flat Jamb</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Stop Application</label>
+                            <select id="stopType">
+                                <option value="876 Finger Joint Stop">876 Finger Joint Stop</option>
+                                <option value="WM887 FJ Pine Stop">WM887 FJ Pine Stop</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-panel" id="hardwarePanel">
+                    <div class="panel-header">5. Bore, Hinge, & Hardware</div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="input-group">
+                                <label>Handing</label>
+                                <div class="pill-group" id="handingGroup" style="margin:0;"></div>
+                            </div>
+                            
+                            <div class="input-group" id="activeBoreWrapper">
+                                <label>Active Bore</label>
+                                <div class="pill-group" id="activeBoreGroup" style="margin:0;">
+                                    <div class="pill selected" data-val="Single Bore">Single Bore</div>
+                                    <div class="pill" data-val="Double Bore">Double Bore</div>
+                                    <div class="pill" data-val="No Bore">No Bore</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row hidden" id="inactiveBoreWrapper" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border-color);">
+                            <div class="input-group" style="grid-column: 2;">
+                                <label style="color: var(--brand-primary);">Inactive Bore (Double Door)</label>
+                                <div class="pill-group" id="inactiveBoreGroup" style="margin:0;">
+                                    <div class="pill selected" data-val="No Bore">No Bore</div>
+                                    <div class="pill" data-val="Single Bore">Single Bore</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row" style="margin-top: 20px;" id="hingeOptionsWrapper">
+                            <div class="input-group">
+                                <label>Hinge Color & Finish</label>
+                                <select id="hingeFinish">
+                                    <option value="Satin Nickel Standard Hinge">Satin Nickel Standard</option>
+                                    <option value="Flat Black Standard Hinge">Flat Black Standard</option>
+                                    <option value="Colonial Bronze Standard Hinge">Colonial Bronze Standard</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Hinge Shape</label>
+                                <select id="hingeShape">
+                                    <option value='5/8" Radius 5/8" Radius Hinge Shape'>5/8" Radius</option>
+                                    <option value='Square Corner Hinge Shape'>Square Corner</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row hidden" id="doubleHardwareWrapper" style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed var(--border-color);">
+                            <div class="input-group" id="flushBolt68Wrapper">
+                                <label style="color: var(--brand-primary);">7" Flush Bolt Finish</label>
+                                <select id="flushBolt68">
+                                    <option value="4.30|7&quot; Flip Lever Flush Bolt Satin Nickel US15">Satin Nickel US15</option>
+                                    <option value="4.30|7&quot; Flip Lever Flush Bolt Flat Black US19">Flat Black US19</option>
+                                    <option value="4.30|7&quot; Flip Lever Flush Bolt Colonial Bronze US10BD">Colonial Bronze US10BD</option>
+                                    <option value="4.30|7&quot; Flip Lever Flush Bolt Bright Brass US3">Bright Brass US3</option>
+                                </select>
+                            </div>
+                            <div class="input-group hidden" id="flushBolt80Wrapper">
+                                <label style="color: var(--brand-primary);">16" Extension Bolt Finish</label>
+                                <select id="flushBolt80">
+                                    <option value="6.37|Flip Lvr Fl Bolt w/16&quot; Extension SatNckl US15">Satin Nickel US15</option>
+                                    <option value="6.37|Flip Lvr Fl Bolt w/16&quot; Extension Flat Blk US19">Flat Black US19</option>
+                                    <option value="6.37|Flip Lvr Fl Bolt w/16&quot; Extension Col Brz US10BD">Colonial Bronze US10BD</option>
+                                    <option value="6.37|Flip Lvr Fl Bolt w/16&quot; Extension Brass US3">Bright Brass US3</option>
+                                </select>
+                            </div>
+                            <div class="input-group hidden" id="ballCatchWrapper">
+                                <label style="color: var(--brand-primary);">Ball Catch Selection</label>
+                                <select id="ballCatch">
+                                    <option value="0.50|Ball Catch Strike Plate Only US10BD Colonial Brz">Colonial Bronze US10BD</option>
+                                    <option value="0.61|Ball Catch Strike Plate 1-5/8&quot; US3-4 Light Brass">Light Brass US3-4</option>
+                                    <option value="0.61|Ball Catch Strike Plate 1-5/8&quot; US19 Flat Black">Flat Black US19</option>
+                                    <option value="1.14|Adj. Ball Catch Only Drive-In Style Polished Chrome DD05-300">Polished Chrome Drive-In</option>
+                                </select>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-panel">
+                <div class="panel-header">6. Services & Adders</div>
+                <div class="panel-body">
+                    <div id="priceAlert" class="alert">Price N/A for this Tier/Size/Core combination. Base cost set to $0.</div>
+                    <div class="checkbox-list" id="productionList">
+                        </div>
+                </div>
+            </div>
+
+            <div class="config-panel">
+                <div class="panel-header">7. Quantity & Room Details</div>
+                <div class="panel-body row" style="align-items: center;">
+                    <div class="input-group" style="margin:0;">
+                        <label>Quantity</label>
+                        <input type="number" id="qtyInput" value="1" min="1" style="font-size: 1.5rem; text-align: center;">
+                    </div>
+                    <div class="input-group" style="margin:0;">
+                        <label>Room / Location (Optional)</label>
+                        <input type="text" id="roomInput" placeholder="e.g., Master Bedroom" style="font-size: 1.1rem;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="sidebar-cart">
+            <div class="sidebar-header">
+                <span>Current Quote Items</span>
+                <span id="sidebarTotalCount" style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">0 Items</span>
+            </div>
+            <div class="sidebar-scroll-area" id="sidebarItemsList">
+                <div style="text-align: center; color: var(--text-muted); padding: 20px 0; font-size: 0.9rem;">No items built yet.</div>
+            </div>
+            <div class="sidebar-footer">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span style="font-weight: 700; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">Total Quote Value</span>
+                    <span id="sidebarGrandTotal" style="font-size: 1.3rem; font-weight: 800; color: var(--brand-accent);">$0.00</span>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <div id="toast">Item added to Cart!</div>
+
+    <script>
+        // --- STEVES & SONS AVAILABILITY MATRIX ---
+        const singleWidthsList = ["1'0\"", "1'2\"", "1'3\"", "1'4\"", "1'6\"", "1'8\"", "1'10\"", "2'0\"", "2'2\"", "2'4\"", "2'6\"", "2'8\"", "2'10\"", "3'0\""];
+        const bifoldWidthsList = ["1'6\"", "2'0\"", "2'4\"", "2'6\"", "2'8\"", "3'0\"", "4'0\"", "5'0\"", "6'0\""];
+
+        const stevesMatrix = {
+            "1 Panel Shaker": {
+                "68": "X,X,V,X,V,X,V,V,V,V,V,V,V,V|N,X,V,X,V,X,V,V,V",
+                "70": "X,X,X,X,V,X,X,V,X,V,V,V,V,V|N,N,N,N,N,N,N,N,N",
+                "80": "X,X,X,X,V,V,V,V,X,V,V,V,V,V|N,N,X,X,X,X,X,X,X"
+            },
+            "2 Panel Shaker": {
+                "68": "X,X,X,X,V,X,V,V,V,V,V,V,V,V|N,X,V,X,V,X,V,V,V",
+                "70": "X,X,X,X,V,X,V,V,X,V,V,V,V,V|N,X,V,X,V,X,V,V,V",
+                "80": "X,X,X,X,V,X,V,V,X,V,V,V,V,V|N,N,X,X,X,X,X,X,X"
+            },
+            "3 Panel Shaker": {
+                "68": "X,X,X,X,V,X,V,V,X,V,V,V,V,V|N,X,V,X,V,X,V,V,V",
+                "70": "X,X,X,X,X,X,V,V,X,V,V,V,X,V|N,X,V,X,V,X,V,V,V",
+                "80": "N,N,N,N,N,N,N,N,N,N,N,N,N,N|N,N,N,N,N,N,N,N,N" 
+            },
+            "3 Panel Equal Shaker": {
+                "68": "V,V,V,V,V,V,V,V,V,V,V,V,V,V|N,X,V,X,V,X,V,V,V",
+                "70": "V,V,V,V,V,V,V,V,X,V,V,V,V,V|N,X,V,X,V,X,V,V,V",
+                "80": "X,X,X,V,V,V,V,V,X,V,V,V,V,V|N,X,V,X,V,X,V,V,V"
+            },
+            "5 Panel Shaker": {
+                "68": "X,X,X,X,V,V,X,V,X,V,V,V,V,V|N,X,V,X,V,X,V,V,V",
+                "70": "X,X,X,X,V,V,X,V,V,V,V,V,V,V|N,X,V,X,V,X,V,V,V",
+                "80": "X,X,X,X,V,V,X,V,V,V,V,V,V,V|N,X,V,X,V,X,V,V,V"
+            },
+            "6 Panel": {
+                "68": "X,X,X,V,V,V,X,V,V,V,V,V,V,V|N,V,V,V,V,V,V,V,V",
+                "70": "N,N,N,X,X,V,X,V,X,V,V,V,V,V|N,X,V,V,V,V,V,V,V",
+                "80": "N,N,N,V,V,V,X,V,X,V,V,V,V,V|N,X,V,V,V,V,V,V,V"
+            },
+            "4 Panel": {
+                "68": "X,X,X,V,V,V,X,V,V,V,V,V,V,V|N,N,V,V,V,V,V,V,V",
+                "70": "X,X,X,X,V,V,X,V,X,V,V,V,X,V|N,N,V,V,V,V,V,V,V",
+                "80": "X,X,X,X,V,V,X,V,X,V,V,V,X,V|N,N,V,V,V,V,V,V,V"
+            },
+            "5 Panel": {
+                "68": "X,X,X,X,V,V,X,V,X,V,V,V,V,V|N,X,V,X,V,X,V,V,V",
+                "70": "X,X,X,X,X,V,X,V,X,V,V,V,V,V|N,X,V,X,V,X,V,V,X",
+                "80": "X,X,X,X,X,V,X,V,X,V,V,V,V,V|N,N,X,X,X,X,X,X,X"
+            },
+            "2 Panel Roundtop Plank": {
+                "68": "X,X,X,V,V,V,X,V,X,V,V,V,X,V|N,X,V,X,V,X,V,V,V",
+                "70": "X,X,X,V,V,V,X,V,X,V,V,V,X,V|N,X,V,X,V,X,V,V,V",
+                "80": "X,X,X,V,V,V,X,V,X,V,V,V,X,V|N,X,X,X,X,X,X,X,X"
+            },
+            "2 Panel Roundtop": {
+                "68": "X,X,X,V,V,V,X,V,X,V,V,V,V,V|N,X,V,X,V,X,V,V,V",
+                "70": "N,N,N,X,V,V,X,V,X,V,V,V,V,V|N,N,N,N,N,X,X,N,N",
+                "80": "X,X,X,V,V,V,X,V,X,V,V,V,V,V|N,N,X,X,X,X,X,X,X"
+            },
+            "2 Panel Archtop": {
+                "68": "X,X,X,V,V,V,X,V,X,V,V,V,V,V|N,X,V,V,V,X,V,V,V",
+                "70": "*,*,*,*,*,*,*,*,*,*,*,*,*,*|N,N,*,*,*,*,*,*,*",
+                "80": "N,N,N,N,N,N,N,N,N,N,N,N,N,N|N,N,N,N,N,N,N,N,N"
+            },
+            "2 Panel Squaretop": {
+                "68": "X,X,X,V,V,V,X,V,V,V,V,V,V,V|N,X,V,V,V,V,V,V,V",
+                "70": "X,X,X,V,V,V,X,V,X,V,V,V,V,V|N,X,V,V,V,V,V,V,V",
+                "80": "X,X,X,X,X,X,X,V,X,V,V,V,X,V|N,X,V,V,V,V,V,V,V"
+            },
+            "Hardwood": {
+                "68": "X,X,X,X,X,X,X,V,X,V,V,V,X,V|V,X,V,V,V,V,V,V,V",
+                "70": "X,X,X,X,X,X,X,V,X,V,V,V,X,V|V,X,V,V,V,V,V,V,V",
+                "80": "X,X,X,X,X,X,X,V,X,V,V,V,X,V|V,X,V,V,V,V,V,V,V"
+            },
+            "Birch": {
+                "68": "X,X,X,X,X,X,X,V,X,V,V,V,X,V|V,X,V,V,V,V,V,V,V",
+                "70": "X,X,X,X,X,X,X,V,X,V,V,V,X,V|V,X,V,V,V,V,V,V,V",
+                "80": "X,X,X,X,X,X,X,V,X,V,V,V,X,V|V,X,V,V,V,V,V,V,V"
+            },
+            "Oak": {
+                "68": "X,X,X,X,X,X,X,V,X,V,V,V,X,V|V,X,V,V,V,V,V,V,V",
+                "70": "X,X,X,X,X,X,X,V,X,V,V,V,X,V|V,X,V,V,V,V,V,V,V",
+                "80": "X,X,X,X,X,X,X,V,X,V,V,V,X,V|V,X,V,V,V,V,V,V,V"
+            },
+            "Primed Hardboard": {
+                "68": "X,X,X,X,X,X,X,V,X,V,V,V,X,V|V,X,V,V,V,V,V,V,V",
+                "70": "X,X,X,X,X,X,X,V,X,V,V,V,X,V|V,X,V,V,V,V,V,V,V",
+                "80": "X,X,X,X,X,X,X,V,X,V,V,V,X,V|V,X,V,V,V,V,V,V,V"
+            },
+            "Primed Embossed": {
+                "68": "X,X,X,X,X,X,X,V,X,V,V,V,X,V|V,X,V,V,V,V,V,V,V",
+                "70": "X,X,X,X,X,X,X,V,X,V,V,V,X,V|V,X,V,V,V,V,V,V,V",
+                "80": "X,X,X,X,X,X,X,V,X,V,V,V,X,V|V,X,V,V,V,V,V,V,V"
+            }
+        };
+
+        // --- PRICING DATABASE ---
+        const pricingDB = {
+            "molded": {
+                "68": { "138HC": { "1/6": [41.49, 40.02, 35.57], "2/0": [43.63, 42.09, 34.11], "2/4": [46.66, 45.01, 39.62], "2/6": [47.65, 45.96, 40.40], "2/8": [49.79, 48.04, 42.09], "3/0": [52.83, 50.96, 44.47] }, "138SC": { "1/6": [89.07, 85.93, 69.89], "2/0": [89.07, 85.93, 69.89], "2/4": [93.83, 90.52, 73.63], "2/6": [93.83, 90.52, 73.63], "2/8": [97.39, 93.95, 76.42], "3/0": [100.82, 97.26, 79.12] } },
+                "70": { "138HC": { "1/6": [66.63, 64.28, 57.55], "2/0": [68.85, 66.42, 59.29], "2/4": [71.98, 69.44, 61.74], "2/6": [72.99, 70.41, 62.54], "2/8": [75.21, 72.55, 64.28], "3/0": [78.35, 75.59, 66.74] }, "138SC": { "1/6": [114.77, 110.72, 90.06], "2/0": [114.77, 110.72, 90.06], "2/4": [119.63, 115.41, 93.87], "2/6": [119.63, 115.41, 93.87], "2/8": [123.27, 118.92, 96.73], "3/0": [126.77, 122.29, 99.47] } },
+                "80": { "138HC": { "1/6": [81.34, 78.47, 71.19], "2/0": [83.43, 80.48, 72.83], "2/4": [86.34, 83.29, 75.12], "2/6": [87.29, 84.21, 75.86], "2/8": [89.38, 86.22, 77.51], "3/0": [92.32, 89.06, 79.81] }, "138SC": { "1/6": [126.43, 121.96, 99.20], "2/0": [126.43, 121.96, 99.20], "2/4": [130.76, 126.14, 102.60], "2/6": [130.76, 126.14, 102.60], "2/8": [133.99, 129.26, 105.14], "3/0": [137.10, 132.26, 107.58] } }
+            },
+            "flushHB": {
+                "68": { "138HC": { "1/6": [38.13, 36.79, 33.08], "2/0": [39.90, 38.49, 34.47], "2/4": [40.85, 39.41, 35.22], "2/6": [42.17, 40.68, 36.24], "2/8": [45.40, 43.80, 38.78], "3/0": [50.18, 48.41, 42.54] }, "138SC": { "1/6": [88.91, 85.78, 69.77], "2/0": [90.11, 86.93, 70.71], "2/4": [93.32, 90.02, 73.22], "2/6": [93.32, 90.02, 73.22], "2/8": [96.84, 93.42, 75.99], "3/0": [102.67, 99.05, 80.57] } },
+                "70": { "138HC": { "1/6": [50.28, 50.27, 50.46], "2/0": [59.43, 57.33, 51.89], "2/4": [60.40, 58.27, 52.66], "2/6": [61.76, 59.58, 53.73], "2/8": [65.10, 62.80, 56.35], "3/0": [70.04, 67.56, 60.22] }, "138SC": { "1/6": [113.41, 109.41, 89.00], "2/0": [114.63, 110.59, 89.96], "2/4": [117.91, 113.75, 92.53], "2/6": [117.91, 113.75, 92.53], "2/8": [121.51, 117.22, 95.35], "3/0": [127.46, 122.96, 100.02] } },
+                "80": { "138HC": { "1/6": [90.78, 87.58, 78.61], "2/0": [92.50, 89.24, 79.95], "2/4": [93.41, 90.12, 80.67], "2/6": [94.68, 91.34, 81.66], "2/8": [97.82, 94.36, 84.12], "3/0": [102.45, 98.84, 87.76] }, "138SC": { "1/6": [149.39, 144.12, 117.23], "2/0": [150.61, 145.29, 118.18], "2/4": [153.89, 148.46, 120.76], "2/6": [153.89, 148.46, 120.76], "2/8": [157.49, 151.93, 123.58], "3/0": [163.44, 157.67, 128.25] } }
+            },
+            "simpson": {
+              "1 Panel Shaker": {
+                "68": {
+                  "1-3/8_std": { "1/6": [68.6, 60.53, 54.16], "1/8": [169.88, null, 55.67], "1/10": [169.88, null, 55.67], "2/0": [69.85, 61.63, 55.15], "2/2": [184.49, null, 61.26], "2/4": [77.6, 68.47, 61.26], "2/6": [80.8, 71.29, 63.79], "2/8": [84.36, 74.44, 66.6], "2/10": [88.95, 78.48, 70.22], "3/0": [88.95, 78.48, 70.22] },
+                  "1-3/4_20min": { "2/8": [205.54, 205.54, null], "3/0": [219.25, 219.25, null] },
+                  "1-3/4_std": { "1/6": [104.71, 92.39, 82.66], "2/0": [116.25, 102.58, 91.78], "2/4": [128.11, 113.04, 101.14], "2/6": [132.27, 116.71, 104.42], "2/8": [136.2, 120.18, 107.53], "3/0": [144.25, 127.28, 113.88] }
+                },
+                "80": {
+                  "1-3/8_std": { "1/6": [84.49, 74.55, 66.71], "2/0": [95.27, 84.06, 75.21], "2/4": [104.95, 92.6, 82.85], "2/6": [109.32, 96.46, 86.31], "2/8": [114.24, 100.8, 90.19], "3/0": [122.28, 107.89, 96.54] },
+                  "1-3/4_20min": { "2/8": [236.02, 236.02, null], "3/0": [252.15, 252.15, null] },
+                  "1-3/4_std": { "2/0": [122.8, 108.35, 96.95], "2/4": [135.32, 119.4, 106.83], "2/6": [146.08, 128.89, 115.33], "2/8": [152.4, 134.47, 120.32], "3/0": [157.16, 138.67, 124.07] }
+                }
+              },
+              "2 Panel Shaker": {
+                "68": {
+                  "1-3/8_std": { "1/6": [71.61, 63.19, 56.54], "1/8": [177.55, null, 57.45], "1/10": [177.55, null, 57.45], "2/0": [72.77, 64.21, 57.45], "2/2": [196.55, null, 62.53], "2/4": [79.2, 69.88, 62.53], "2/6": [82.75, 73.01, 65.33], "2/8": [86.64, 76.45, 68.4], "2/10": [95.16, 83.96, 75.13], "3/0": [95.16, 83.96, 75.13] },
+                  "1-3/4_20min": { "2/8": [207.75, 207.75, null], "3/0": [223.81, 223.81, null] },
+                  "1-3/4_std": { "1/6": [109.17, 96.33, 86.19], "2/0": [125.84, 111.04, 99.35], "2/4": [131.23, 115.79, 103.6], "2/6": [135.64, 119.68, 107.08], "2/8": [140.27, 123.76, 110.74], "3/0": [149.35, 131.78, 117.91] }
+                },
+                "80": {
+                  "1-3/8_std": { "1/6": [89.76, 79.2, 70.86], "2/0": [93.89, 82.85, 74.13], "2/4": [103.92, 91.69, 82.04], "2/6": [108.69, 95.91, 85.81], "2/8": [113.79, 100.4, 89.83], "3/0": [125.12, 110.4, 98.78] },
+                  "1-3/4_20min": { "2/8": [285.19, 285.19, null], "3/0": [293.18, 293.18, null] },
+                  "1-3/4_std": { "1/6": [129.43, 114.2, 102.18], "2/0": [147.19, 129.87, 116.2], "2/4": [158.57, 139.92, 125.19], "2/6": [164.29, 144.96, 129.71], "2/8": [170.24, 150.21, 134.4], "3/0": [181.95, 160.54, 143.64] }
+                }
+              },
+              "3 Panel Equal Shaker": {
+                "68": {
+                  "1-3/8_std": { "1/6": [74.65, 65.87, 58.94], "1/8": [208.24, null, 59.16], "1/10": [208.24, null, 59.16], "2/0": [74.93, 66.12, 59.16], "2/2": [226.87, null, 64.54], "2/4": [81.75, 72.13, 64.54], "2/6": [85.32, 75.28, 67.36], "2/8": [89.25, 78.75, 70.46], "2/10": [97.88, 86.36, 77.27], "3/0": [97.88, 86.36, 77.27] },
+                  "1-3/4_20min": { "2/8": [211.71, 211.71, null], "3/0": [221.32, 221.32, null] }
+                },
+                "80": {
+                  "1-3/8_std": { "1/6": [90.92, 80.22, 71.78], "2/0": [99.08, 87.42, 78.22], "2/4": [109.56, 96.67, 86.49], "2/6": [114.36, 100.91, 90.28], "2/8": [119.71, 105.62, 94.51], "3/0": [128.51, 113.39, 101.45] },
+                  "1-3/4_20min": { "2/8": [326.23, 287.85, null], "3/0": [335.43, 295.96, null] }
+                }
+              },
+              "3 Panel Craftsman Shaker": {
+                "68": {
+                  "1-3/8_std": { "1/6": [60.8, 53.65, 48.0], "1/8": [188.88, 63.52, 56.83], "1/10": [188.88, 63.52, 56.83], "2/0": [71.99, 63.52, 56.83], "2/2": [206.41, 70.35, 62.95], "2/4": [79.73, 70.35, 62.95], "2/6": [83.15, 73.36, 65.64], "2/8": [86.87, 76.65, 68.58], "2/10": [95.07, 83.88, 75.05], "3/0": [95.07, 83.88, 75.05] }
+                },
+                "80": {
+                  "1-3/8_std": { "1/6": [91.15, 80.42, 71.96], "2/0": [91.41, 80.66, 72.17], "2/4": [101.05, 89.16, 79.78], "2/6": [105.48, 93.07, 83.27], "2/8": [110.2, 97.24, 87.0], "3/0": [120.75, 106.54, 95.33] }
+                }
+              },
+              "5 Panel Shaker": {
+                "68": {
+                  "1-3/8_std": { "1/6": [73.31, 64.68, 57.87], "1/8": [183.03, null, 61.6], "1/10": [183.03, null, 61.6], "2/0": [78.03, 68.85, 61.6], "2/2": [201.67, null, 67.08], "2/4": [84.97, 74.98, 67.08], "2/6": [88.13, 77.76, 69.58], "2/8": [92.08, 81.25, 72.69], "2/10": [99.79, 88.05, 78.78], "3/0": [99.79, 88.05, 78.78] },
+                  "1-3/4_20min": { "2/8": [221.32, 221.32, null], "3/0": [238.02, 238.02, null] }
+                },
+                "80": {
+                  "1-3/8_std": { "1/6": [100.55, 88.72, 79.38], "2/0": [101.28, 89.36, 79.96], "2/4": [110.49, 97.49, 87.23], "2/6": [114.61, 101.13, 90.48], "2/8": [117.0, 103.24, 92.37], "3/0": [126.77, 111.86, 100.08] },
+                  "1-3/4_20min": { "2/8": [270.16, 270.16, null], "3/0": [278.65, 278.65, null] }
+                }
+              }
+            }
+        };
+
+        const productionAdders = [
+            { name: "Prehang 6'8 Single (Std 4-9/16)", cost: 25.00 }, { name: "Prehang 8'0 Single (Std 4-9/16)", cost: 32.00 },
+            { name: "Upcharge to Interior 6-9/16 Jamb", cost: 20.00 }, { name: "Prehang 6'8 Double Ball Catch", cost: 55.00 },
+            { name: "Prehang 6'8 Double Flush Bolt", cost: 85.00 }, { name: "Prehang 8'0 Double Flush Bolt", cost: 95.00 },
+            { name: "Prehang 8'0 Double Ball Catch", cost: 50.00 }, { name: "Upcharge to Primed FJ Jamb", cost: 5.00 },
+            { name: "Slab Cutdown", cost: 10.00 }, { name: "Hinge Prep (Per Slab)", cost: 30.00 },
+            { name: "Bore Prep (Per Slab)", cost: 20.00 }, { name: "Casing Pre Applied", cost: 5.00 }
+        ];
+
+        // --- UI State Variables ---
+        let currentMode = 'single';
+        let currentUnitType = 'prehung';
+        let projectTally = [];
+        let viewMode = 'configurator'; 
+        let currentQuoteData = { cost: 0, price: 0, profit: 0, valid: true };
+
+        // --- Data Loading ---
+        function loadTally() {
+            try { 
+                const stored = localStorage.getItem('sd_projectTally'); 
+                if(stored) projectTally = JSON.parse(stored); 
+            } catch(e){}
+            renderSidebar();
+        }
+
+        function saveTally() {
+            localStorage.setItem('sd_projectTally', JSON.stringify(projectTally));
+            renderSidebar();
+        }
+
+        // --- Core Functions ---
+        function setupPills(groupId, callback) {
+            const group = document.getElementById(groupId);
+            if (!group) return;
+            group.querySelectorAll('.pill').forEach(pill => {
+                pill.addEventListener('click', () => {
+                    group.querySelectorAll('.pill').forEach(p => p.classList.remove('selected'));
+                    pill.classList.add('selected');
+                    if(callback) callback(pill.dataset.val);
+                    updateCosting();
+                });
+            });
+        }
+
+        function getPillVal(groupId) {
+            const el = document.querySelector(`#${groupId} .pill.selected`);
+            return el ? el.dataset.val : '';
+        }
+
+        // --- Dynamic Interface Builders ---
+        function initAdders() {
+            const prodList = document.getElementById('productionList');
+            productionAdders.forEach(item => {
+                prodList.innerHTML += `<label class="checkbox-item"><input type="checkbox" class="calc-trigger" value="${item.cost}" data-name="${item.name}"><span>${item.name}</span><span class="cost-badge">$${item.cost.toFixed(2)}</span></label>`;
+            });
+            document.querySelectorAll('.calc-trigger').forEach(el => el.addEventListener('change', updateCosting));
+        }
+
+        function updateHardwareVisibility() {
+            const isDouble = currentMode === 'double';
+            document.getElementById('doubleHardwareWrapper').classList.toggle('hidden', !isDouble);
+            
+            if (isDouble) {
+                const handing = getPillVal('handingGroup');
+                const height = getPillVal('doorHeightGroup');
+                
+                if (handing === 'No Hand') {
+                    document.getElementById('ballCatchWrapper').classList.remove('hidden');
+                    document.getElementById('flushBolt68Wrapper').classList.add('hidden');
+                    document.getElementById('flushBolt80Wrapper').classList.add('hidden');
+                } else {
+                    document.getElementById('ballCatchWrapper').classList.add('hidden');
+                    if (height === '68') {
+                        document.getElementById('flushBolt68Wrapper').classList.remove('hidden');
+                        document.getElementById('flushBolt80Wrapper').classList.add('hidden');
+                    } else {
+                        document.getElementById('flushBolt68Wrapper').classList.add('hidden');
+                        document.getElementById('flushBolt80Wrapper').classList.remove('hidden');
+                    }
+                }
+            }
+        }
+
+        function rebuildDynamicOptions() {
+            const widthSelect = document.getElementById('doorWidth');
+            const currentWidth = widthSelect.value;
+            widthSelect.innerHTML = '';
+            
+            const isBifold = currentMode === 'bifold';
+            const isDouble = currentMode === 'double';
+            
+            const material = getPillVal('materialGroup');
+            let shape = material === 'Molded' ? getPillVal('shapeGroupMolded') : getPillVal('shapeGroupFlush');
+            if (material === 'Simpson') shape = getPillVal('shapeGroupSimpson');
+
+            const height = getPillVal('doorHeightGroup');
+            
+            let availableWidths = [];
+            let statusMap = {};
+
+            if (material === 'Simpson') {
+                const thickKey = getPillVal('simpsonThicknessGroup');
+                
+                if (pricingDB.simpson[shape] && pricingDB.simpson[shape][height] && pricingDB.simpson[shape][height][thickKey]) {
+                    const widthKeys = Object.keys(pricingDB.simpson[shape][height][thickKey]);
+                    
+                    if (isBifold) {
+                        availableWidths = [];
+                    } else if (isDouble) {
+                        widthKeys.forEach(w => {
+                            const wParts = w.split("/");
+                            let totalInches = parseInt(wParts[0]) * 12 + parseInt(wParts[1] || 0);
+                            totalInches *= 2;
+                            let f = Math.floor(totalInches / 12);
+                            let inc = totalInches % 12;
+                            let doubleW = `${f}'${inc}"`;
+                            availableWidths.push(doubleW);
+                            statusMap[doubleW] = 'V';
+                        });
+                    } else {
+                        widthKeys.forEach(w => {
+                            const wParts = w.split("/");
+                            let singleW = `${wParts[0]}'${wParts[1]}\"`;
+                            availableWidths.push(singleW);
+                            statusMap[singleW] = 'V';
+                        });
+                    }
+                }
+                
+                availableWidths.sort((a, b) => {
+                    const getInches = (str) => {
+                        const pts = str.replace('"', '').split("'");
+                        return parseInt(pts[0]) * 12 + parseInt(pts[1] || 0);
+                    };
+                    return getInches(a) - getInches(b);
+                });
+
+            } else if (stevesMatrix[shape] && stevesMatrix[shape][height]) {
+                const dataStr = stevesMatrix[shape][height];
+                const parts = dataStr.split('|');
+                const singleData = parts[0].split(',');
+                const bifoldData = parts[1].split(',');
+
+                if (isBifold) {
+                    bifoldWidthsList.forEach((w, i) => {
+                        if (bifoldData[i] !== 'N') {
+                            availableWidths.push(w);
+                            statusMap[w] = bifoldData[i];
+                        }
+                    });
+                } else if (isDouble) {
+                    singleWidthsList.forEach((w, i) => {
+                        if (singleData[i] !== 'N') {
+                            const wParts = w.replace('"', '').split("'");
+                            let totalInches = parseInt(wParts[0]) * 12 + parseInt(wParts[1] || 0);
+                            totalInches *= 2;
+                            let f = Math.floor(totalInches / 12);
+                            let inc = totalInches % 12;
+                            let doubleW = `${f}'${inc}"`;
+                            
+                            availableWidths.push(doubleW);
+                            statusMap[doubleW] = singleData[i];
+                        }
+                    });
+                } else {
+                    singleWidthsList.forEach((w, i) => {
+                        if (singleData[i] !== 'N') {
+                            availableWidths.push(w);
+                            statusMap[w] = singleData[i];
+                        }
+                    });
+                }
+            } else {
+                availableWidths = isBifold ? bifoldWidthsList : (isDouble ? ["3'0\"", "4'0\"", "4'8\"", "5'0\"", "5'4\"", "6'0\""] : ["1'6\"", "2'0\"", "2'4\"", "2'6\"", "2'8\"", "3'0\""]);
+                availableWidths.forEach(w => statusMap[w] = 'V');
+            }
+
+            availableWidths.forEach(w => {
+                const opt = document.createElement('option');
+                opt.value = w; 
+                opt.text = w;
+                opt.dataset.status = statusMap[w];
+                widthSelect.appendChild(opt);
+            });
+
+            if (availableWidths.includes(currentWidth)) {
+                widthSelect.value = currentWidth;
+            } else if (availableWidths.length > 0) {
+                const defaultW = isBifold ? "3'0\"" : (isDouble ? "5'0\"" : "2'4\"");
+                widthSelect.value = availableWidths.includes(defaultW) ? defaultW : availableWidths[0];
+            }
+
+            // Handing Group Logic
+            const handingGroup = document.getElementById('handingGroup');
+            handingGroup.innerHTML = '';
+            if (isBifold || currentMode === 'cased_opening') {
+                handingGroup.innerHTML = `<div class="pill selected" data-val="No Hand">No Hand</div>`;
+            } else if (isDouble) {
+                handingGroup.innerHTML = `<div class="pill" data-val="No Hand">No Hand</div><div class="pill selected" data-val="LHA">Left Hand Active</div><div class="pill" data-val="RHA">Right Hand Active</div>`;
+            } else {
+                handingGroup.innerHTML = `<div class="pill selected" data-val="LH">Left Hand</div><div class="pill" data-val="RH">Right Hand</div>`;
+            }
+            
+            setupPills('handingGroup', () => {
+                updateHardwareVisibility();
+            });
+
+            // UI Toggles
+            document.getElementById('inactiveBoreWrapper').classList.toggle('hidden', !isDouble);
+            
+            const isPrehung = currentUnitType === 'prehung' && currentMode !== 'slab_only' && currentMode !== 'cased_opening';
+            document.getElementById('prehungPanels').classList.toggle('hidden', !isPrehung);
+            
+            const showDesign = currentMode !== 'cased_opening';
+            document.getElementById('doorDesignPanel').classList.toggle('hidden', !showDesign);
+
+            if (isBifold) {
+                document.getElementById('activeBoreWrapper').classList.add('hidden');
+                document.getElementById('hingeOptionsWrapper').classList.add('hidden');
+            } else {
+                document.getElementById('activeBoreWrapper').classList.remove('hidden');
+                document.getElementById('hingeOptionsWrapper').classList.remove('hidden');
+            }
+
+            updateHardwareVisibility();
+        }
+
+        // --- Initialization ---
+        initAdders();
+
+        setupPills('configTypeGroup', (val) => { 
+            currentMode = val; 
+            if (val === 'slab_only') {
+                document.querySelector('#unitTypeGroup .pill[data-val="frame_only"]').classList.remove('selected');
+                document.querySelector('#unitTypeGroup .pill[data-val="prehung"]').classList.remove('selected');
+                currentUnitType = 'slab_only';
+            } else if (val === 'cased_opening') {
+                document.querySelector('#unitTypeGroup .pill[data-val="prehung"]').classList.remove('selected');
+                document.querySelector('#unitTypeGroup .pill[data-val="frame_only"]').classList.add('selected');
+                currentUnitType = 'frame_only';
+            } else {
+                document.querySelector('#unitTypeGroup .pill[data-val="prehung"]').classList.add('selected');
+                currentUnitType = 'prehung';
+            }
+            rebuildDynamicOptions(); 
+        });
+        setupPills('unitTypeGroup', (val) => { currentUnitType = val; rebuildDynamicOptions(); });
+        
+        setupPills('materialGroup', (val) => {
+            const isMolded = val === 'Molded';
+            const isSimpson = val === 'Simpson';
+            
+            document.getElementById('mouldedOptionsWrapper').classList.toggle('hidden', !isMolded);
+            document.getElementById('flushOptionsWrapper').classList.toggle('hidden', !(!isMolded && !isSimpson));
+            document.getElementById('simpsonOptionsWrapper').classList.toggle('hidden', !isSimpson);
+            
+            document.getElementById('standardCoreWrapper').classList.toggle('hidden', isSimpson);
+            document.getElementById('simpsonThicknessWrapper').classList.toggle('hidden', !isSimpson);
+            
+            rebuildDynamicOptions();
+        });
+
+        setupPills('doorHeightGroup', rebuildDynamicOptions); 
+        setupPills('textureGroup'); 
+        setupPills('coreGroup'); 
+        setupPills('simpsonThicknessGroup', rebuildDynamicOptions); 
+        setupPills('activeBoreGroup'); 
+        setupPills('inactiveBoreGroup'); 
+        setupPills('shapeGroupMolded', rebuildDynamicOptions);
+        setupPills('shapeGroupFlush', rebuildDynamicOptions);
+        setupPills('shapeGroupSimpson', rebuildDynamicOptions);
+
+        ['doorWidth', 'frameSize', 'stopType', 'hingeFinish', 'hingeShape', 'qtyInput', 'marginPercent', 'purchaseType', 'flushBolt68', 'flushBolt80', 'ballCatch'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.addEventListener('change', updateCosting);
+            if(el && el.type === 'number') el.addEventListener('input', updateCosting);
+        });
+
+        rebuildDynamicOptions();
+        loadTally();
+
+        // --- Auto-Select Adders Logic ---
+        function autoSelectAdders() {
+            const heightVal = getPillVal('doorHeightGroup');
+            const is80 = heightVal === '80';
+            const isDouble = currentMode === 'double';
+            const isPrehung = currentUnitType === 'prehung' && currentMode !== 'slab_only' && currentMode !== 'cased_opening';
+            const handing = getPillVal('handingGroup');
+            const isFlushBolt = handing !== 'No Hand'; 
+            
+            const frameSizeEl = document.getElementById('frameSize');
+            const frameSize = frameSizeEl ? frameSizeEl.value : '';
+            const is6916 = frameSize.includes('6-9/16');
+
+            const controlledNames = [
+                "Prehang 6'8 Single (Std 4-9/16)",
+                "Prehang 8'0 Single (Std 4-9/16)",
+                "Prehang 6'8 Double Ball Catch",
+                "Prehang 6'8 Double Flush Bolt",
+                "Prehang 8'0 Double Flush Bolt",
+                "Prehang 8'0 Double Ball Catch",
+                "Upcharge to Interior 6-9/16 Jamb"
+            ];
+
+            document.querySelectorAll('.calc-trigger').forEach(box => {
+                if (controlledNames.includes(box.dataset.name)) {
+                    box.checked = false;
+                    box.disabled = false;
+                    box.parentElement.style.opacity = "1";
+                    box.parentElement.style.pointerEvents = "auto";
+                    box.parentElement.style.borderColor = "var(--border-color)";
+                    box.parentElement.style.backgroundColor = "#fafaf9";
+                }
+            });
+
+            function checkAndLock(name) {
+                const box = document.querySelector(`.calc-trigger[data-name="${name}"]`);
+                if (box) {
+                    box.checked = true;
+                    box.disabled = true; 
+                    box.parentElement.style.opacity = "0.8";
+                    box.parentElement.style.pointerEvents = "none";
+                    box.parentElement.style.borderColor = "var(--brand-primary)";
+                    box.parentElement.style.backgroundColor = "var(--selection-bg)";
+                }
+            }
+
+            if (isPrehung && currentMode !== 'bifold') {
+                if (isDouble) {
+                    if (is80) {
+                        checkAndLock(isFlushBolt ? "Prehang 8'0 Double Flush Bolt" : "Prehang 8'0 Double Ball Catch");
+                    } else {
+                        checkAndLock(isFlushBolt ? "Prehang 6'8 Double Flush Bolt" : "Prehang 6'8 Double Ball Catch");
+                    }
+                } else {
+                    checkAndLock(is80 ? "Prehang 8'0 Single (Std 4-9/16)" : "Prehang 6'8 Single (Std 4-9/16)");
+                }
+
+                if (is6916) {
+                    checkAndLock("Upcharge to Interior 6-9/16 Jamb");
+                }
+            }
+        }
+
+        // --- DYNAMIC VISUAL PREVIEW LOGIC ---
+        function updatePreview() {
+            const stage = document.getElementById('doorStage');
+            const material = getPillVal('materialGroup');
+            let shape = material === 'Molded' ? getPillVal('shapeGroupMolded') : getPillVal('shapeGroupFlush');
+            if (material === 'Simpson') shape = getPillVal('shapeGroupSimpson');
+            
+            const handing = getPillVal('handingGroup');
+            const isDouble = currentMode === 'double';
+            const isBifold = currentMode === 'bifold';
+            const isCased = currentMode === 'cased_opening';
+
+            let panelsHTML = '';
+            let slabClass = 'door-slab';
+            if (isBifold) slabClass += ' bifold';
+
+            if (shape === '6 Panel') {
+                panelsHTML = `<div class="shape-6p" style="width:100%; height:100%; box-sizing:border-box;"><div class="door-panel-detail"></div><div class="door-panel-detail"></div><div class="door-panel-detail"></div><div class="door-panel-detail"></div><div class="door-panel-detail"></div><div class="door-panel-detail"></div></div>`;
+            } else if (shape === '5 Panel' || shape === '5 Panel Shaker') {
+                panelsHTML = `<div class="shape-4p" style="width:100%; height:100%; box-sizing:border-box;"><div class="door-panel-detail"></div><div class="door-panel-detail"></div><div class="door-panel-detail"></div><div class="door-panel-detail"></div><div class="door-panel-detail"></div></div>`;
+            } else if (shape === '4 Panel') {
+                panelsHTML = `<div class="shape-4p" style="width:100%; height:100%; box-sizing:border-box;"><div class="door-panel-detail"></div><div class="door-panel-detail"></div><div class="door-panel-detail"></div><div class="door-panel-detail"></div></div>`;
+            } else if (shape === '3 Panel Equal Shaker') {
+                panelsHTML = `<div class="shape-3peq" style="width:100%; height:100%; box-sizing:border-box;"><div class="door-panel-detail"></div><div class="door-panel-detail"></div><div class="door-panel-detail"></div></div>`;
+            } else if (shape === '3 Panel Shaker' || shape === '3 Panel Craftsman Shaker') {
+                panelsHTML = `<div class="shape-3psh" style="width:100%; height:100%; box-sizing:border-box;"><div class="door-panel-detail"></div><div class="door-panel-detail"></div><div class="door-panel-detail"></div></div>`;
+            } else if (shape === '1 Panel Shaker') {
+                panelsHTML = `<div class="shape-1p" style="width:100%; height:100%; box-sizing:border-box;"><div class="door-panel-detail"></div></div>`;
+            } else if (shape.includes('2 Panel')) {
+                let topClass = '';
+                if(shape.includes('Roundtop')) topClass = 'roundtop';
+                if(shape.includes('Archtop')) topClass = 'archtop';
+                panelsHTML = `<div class="shape-2p" style="width:100%; height:100%; box-sizing:border-box;"><div class="door-panel-detail ${topClass}"></div><div class="door-panel-detail"></div></div>`;
+            } else {
+                panelsHTML = `<div class="shape-flush" style="width:100%; height:100%; box-sizing:border-box;"></div>`; // Flush
+            }
+
+            stage.innerHTML = '';
+            
+            if (isCased) {
+                // Empty Stage
+            } else if (!isDouble) {
+                const knobClass = handing === 'LH' ? 'knob-right' : (handing === 'RH' ? 'knob-left' : '');
+                const knobHTML = knobClass && !isBifold ? `<div class="door-knob ${knobClass}"></div>` : '';
+                stage.innerHTML = `
+                    <div class="${slabClass}">
+                        ${panelsHTML}
+                        ${knobHTML}
+                    </div>
+                `;
+            } else {
+                const leftKnob = handing === 'LHA' ? '<div class="door-knob knob-right"></div>' : '';
+                const rightKnob = handing === 'RHA' ? '<div class="door-knob knob-left"></div>' : '';
+                
+                stage.innerHTML = `
+                    <div class="${slabClass}">
+                        ${panelsHTML}
+                        ${leftKnob}
+                    </div>
+                    <div class="${slabClass}">
+                        ${panelsHTML}
+                        ${rightKnob}
+                    </div>
+                `;
+            }
+
+            const wSelect = document.getElementById('doorWidth');
+            const w = wSelect.value ? wSelect.value.replace(/[^0-9]/g, '') : '';
+            const h = getPillVal('doorHeightGroup');
+            
+            let styleCode = 'FLSH';
+            if(material === 'Molded') {
+                if(shape === '5 Panel') styleCode = 'SM5P';
+                if(shape === '5 Panel Shaker') styleCode = 'SM5PS';
+                if(shape === '6 Panel') styleCode = 'SM6P';
+                if(shape === '4 Panel') styleCode = 'SM4P';
+                if(shape === '1 Panel Shaker') styleCode = 'SM1P';
+                if(shape === '3 Panel Shaker') styleCode = 'SM3P';
+                if(shape === '3 Panel Equal Shaker') styleCode = 'SM3PEQ';
+                if(shape.includes('2 Panel')) styleCode = 'SM2P';
+            } else if (material === 'Simpson') {
+                if(shape === '1 Panel Shaker') styleCode = 'SP1P';
+                if(shape === '2 Panel Shaker') styleCode = 'SP2P';
+                if(shape === '3 Panel Equal Shaker') styleCode = 'SP3PEQ';
+                if(shape === '3 Panel Craftsman Shaker') styleCode = 'SP3PC';
+                if(shape === '5 Panel Shaker') styleCode = 'SP5P';
+            } else {
+                styleCode = shape.substring(0, 3).toUpperCase(); 
+            }
+            
+            let coreCode = getPillVal('coreGroup');
+            if (material === 'Simpson') {
+                const tk = getPillVal('simpsonThicknessGroup');
+                coreCode = tk === '1-3/8_std' ? '138' : (tk === '1-3/4_std' ? '134' : '134FR');
+            }
+            
+            let sku = `${styleCode}-${w}${h}-${coreCode}-${handing}`;
+            if(isDouble) sku = `DBL-${sku}`;
+            if(isBifold) sku = `BIFOLD-${styleCode}-${w}${h}`;
+            if(isCased) sku = `CASED-OPN-${w}${h}`;
+            
+            document.getElementById('dynamicSkuDisplay').innerText = sku;
+
+            const badge = document.getElementById('availBadge');
+            if (wSelect.options.length > 0 && wSelect.selectedIndex >= 0) {
+                const status = wSelect.options[wSelect.selectedIndex].dataset.status;
+                if (status === 'X') {
+                    badge.className = 'avail-badge avail-cut';
+                    badge.innerText = 'Note: Cut from larger skin';
+                    badge.style.display = 'block';
+                } else if (status === '*') {
+                    badge.className = 'avail-badge avail-call';
+                    badge.innerText = 'Call to Verify Availability';
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // --- Pricing Logic & Margin Math ---
+        function updateCosting() {
+            autoSelectAdders();
+
+            const marginInput = parseFloat(document.getElementById('marginPercent').value) || 0;
+            const marginDecimal = marginInput / 100;
+
+            const material = getPillVal('materialGroup');
+            let styleKey = 'molded';
+            if (material === 'Flush') styleKey = 'flushHB';
+            if (material === 'Simpson') styleKey = 'simpson';
+
+            const heightVal = getPillVal('doorHeightGroup'); 
+            const heightKey = heightVal; 
+
+            const coreVal = getPillVal('coreGroup');
+            let coreKey = coreVal === 'SC' ? '138SC' : '138HC';
+            
+            let simpsonShape = '';
+            if (material === 'Simpson') {
+                simpsonShape = getPillVal('shapeGroupSimpson');
+                coreKey = getPillVal('simpsonThicknessGroup');
+            }
+
+            const widthEl = document.getElementById('doorWidth');
+            let widthVal = widthEl ? widthEl.value : ''; 
+            
+            let lookupWidth = '2/4';
+            if (widthVal) {
+                const parts = widthVal.replace('"', '').split("'");
+                lookupWidth = `${parts[0]}/${parts[1] || '0'}`;
+            }
+
+            if (currentMode === 'double' && widthVal) {
+                const parts = widthVal.replace('"', '').split("'");
+                let totalInches = parseInt(parts[0]) * 12 + parseInt(parts[1] || 0);
+                let halfInches = totalInches / 2;
+                let f = Math.floor(halfInches / 12);
+                let i = halfInches % 12;
+                lookupWidth = `${f}/${i}`;
+            }
+
+            const tier = document.getElementById('purchaseType').value;
+            const tierIndex = (tier === 'jobLot') ? 0 : (tier === 'pallet') ? 1 : 2;
+
+            let baseCost = 0;
+            let validPrice = true;
+
+            if (currentMode !== 'cased_opening') {
+                if (material === 'Simpson') {
+                    try {
+                        const rawPrice = pricingDB['simpson'][simpsonShape][heightKey][coreKey][lookupWidth][tierIndex];
+                        if (rawPrice === null || rawPrice === undefined || isNaN(rawPrice)) validPrice = false;
+                        else baseCost = rawPrice;
+                    } catch (e) {
+                        validPrice = false;
+                    }
+                } else {
+                    try {
+                        const rawPrice = pricingDB[styleKey][heightKey][coreKey][lookupWidth] ? pricingDB[styleKey][heightKey][coreKey][lookupWidth][tierIndex] : 50.00;
+                        if (rawPrice === null || rawPrice === undefined) validPrice = false;
+                        else baseCost = rawPrice;
+                    } catch (e) {
+                        baseCost = 55.00; 
+                    }
+                }
+            }
+
+            let slabCount = (currentMode === 'double') ? 2 : (currentMode === 'cased_opening' ? 0 : 1);
+            let totalSlabCost = baseCost * slabCount;
+
+            let addersTotal = 0;
+            document.querySelectorAll('.calc-trigger:checked').forEach(box => {
+                addersTotal += parseFloat(box.value);
+            });
+
+            if (currentMode === 'double') {
+                const handing = getPillVal('handingGroup');
+                if (handing === 'No Hand') {
+                    const hwVal = document.getElementById('ballCatch').value.split('|')[0];
+                    addersTotal += parseFloat(hwVal);
+                } else {
+                    if (heightVal === '68') {
+                        const hwVal = document.getElementById('flushBolt68').value.split('|')[0];
+                        addersTotal += parseFloat(hwVal);
+                        addersTotal += 30.87; 
+                    } else {
+                        const hwVal = document.getElementById('flushBolt80').value.split('|')[0];
+                        addersTotal += parseFloat(hwVal);
+                        addersTotal += (handing === 'RHA') ? 42.13 : 35.26; 
+                    }
+                }
+            }
+
+            const totalInternalCostPerUnit = totalSlabCost + addersTotal;
+            const qty = parseInt(document.getElementById('qtyInput').value) || 1;
+            const totalInternalCost = totalInternalCostPerUnit * qty;
+
+            const customerPrice = (marginDecimal >= 1) ? 0 : totalInternalCost / (1 - marginDecimal);
+            const profit = customerPrice - totalInternalCost;
+            const markupEquivalent = totalInternalCost > 0 ? customerPrice / totalInternalCost : 0;
+
+            document.getElementById('calculatedMarkup').innerText = markupEquivalent.toFixed(2) + "x";
+            document.getElementById('floatingInternalCost').innerText = "$" + totalInternalCost.toFixed(2);
+            document.getElementById('calculatedPrice').innerText = "$" + customerPrice.toFixed(2);
+            document.getElementById('floatingProfit').innerText = "+$" + profit.toFixed(2);
+
+            const alertBox = document.getElementById('priceAlert');
+            const badge = document.getElementById('stockStatusBadge');
+
+            if (!validPrice && currentMode !== 'cased_opening') {
+                alertBox.style.display = 'block';
+                document.getElementById('calculatedPrice').innerText = "N/A";
+                badge.className = 'status-badge status-invalid';
+                badge.innerText = 'N/A - Check Config';
+            } else {
+                alertBox.style.display = 'none';
+                if (tier === 'drop') {
+                    badge.className = 'status-badge status-special';
+                    badge.innerText = 'Special Order';
+                } else {
+                    badge.className = 'status-badge status-stock';
+                    badge.innerText = 'In Stock';
+                }
+            }
+
+            currentQuoteData = {
+                cost: totalInternalCost,
+                price: customerPrice,
+                profit: profit,
+                valid: validPrice || currentMode === 'cased_opening'
+            };
+
+            updatePreview();
+        }
+
+        // --- Data Compilation & Formatting ---
+        function addToQuote() {
+            if (!currentQuoteData.valid || currentQuoteData.price <= 0) {
+                alert("Cannot add invalid or $0 configuration to quote.");
+                return;
+            }
+
+            const qty = parseInt(document.getElementById('qtyInput').value) || 1;
+            const room = document.getElementById('roomInput').value || "None Assigned";
+            const isPrehung = currentUnitType === 'prehung' && currentMode !== 'slab_only' && currentMode !== 'cased_opening';
+            const isDouble = currentMode === 'double';
+            const isBifold = currentMode === 'bifold';
+            
+            const w = document.getElementById('doorWidth').value;
+            const h = getPillVal('doorHeightGroup');
+            const hDisplay = h === '68' ? '6\'8"' : (h === '70' ? '7\'0"' : '8\'0"');
+            const sku = document.getElementById('dynamicSkuDisplay').innerText;
+            
+            const material = getPillVal('materialGroup');
+            let shape = material === 'Molded' ? getPillVal('shapeGroupMolded') : getPillVal('shapeGroupFlush');
+            if (material === 'Simpson') shape = getPillVal('shapeGroupSimpson');
+            
+            let core = getPillVal('coreGroup') === 'SC' ? 'Solid Core' : 'Hollow Core';
+            let t = "1 3/8\"";
+            
+            if (material === 'Simpson') {
+                const thickKey = getPillVal('simpsonThicknessGroup');
+                if (thickKey === '1-3/8_std') { t = "1-3/8\""; core = "Standard MDF"; }
+                if (thickKey === '1-3/4_std') { t = "1-3/4\""; core = "Solid Standard MDF"; }
+                if (thickKey === '1-3/4_20min') { t = "1-3/4\""; core = "20-Min Fire Rated MDF"; }
+            }
+            
+            const hand = getPillVal('handingGroup');
+            const slabQtyNeeded = isDouble ? (qty * 2) : qty;
+
+            let baseDesc = `<strong style="color:var(--brand-dark);">Product Information:</strong><br>`;
+            
+            let configName = "Single Door";
+            if(isDouble) configName = "Double Door";
+            if(isBifold) configName = "Bifold Door";
+            if(currentMode === 'slab_only') configName = "Prepped Slab Only";
+            if(currentMode === 'cased_opening') configName = "Cased Opening";
+            
+            baseDesc += `${configName}<br> ${w} x ${hDisplay}<br> ${isPrehung || currentMode === 'slab_only' ? hand : ''}<br><br>`;
+            
+            let bomArray = [];
+
+            if (currentMode !== 'cased_opening') {
+                baseDesc += `<strong style="color:var(--brand-dark);">Door Design: ${material}</strong><br> ${sku}<br> ${w} x ${hDisplay} x ${t}<br> ${core} ${shape}<br>`;
+                baseDesc += `<br>`;
+                bomArray.push({ name: `Part Code: ${Math.floor(Math.random() * 90000000) + 10000000} (${sku} Slab)`, qty: slabQtyNeeded });
+            }
+
+            if(isPrehung || currentMode === 'cased_opening') {
+                const frameBase = document.getElementById('frameSize').value;
+                const stopBase = document.getElementById('stopType').value;
+                
+                const is80Material = (h === '70' || h === '80');
+                const heightSuffix = is80Material ? " - 8'0\"" : " - 6'8\"";
+                
+                const frameName = `${frameBase}${heightSuffix}`;
+                const stopName = `${stopBase}${heightSuffix}`;
+
+                let sticksNeeded = 0;
+                if (isDouble) {
+                    sticksNeeded = qty * 3;
+                } else {
+                    sticksNeeded = 3 + ((qty - 1) * 2.5);
+                }
+                const finalSticksQty = Math.ceil(sticksNeeded);
+                
+                baseDesc += `<strong style="color:var(--brand-dark);">Frame & Trim:</strong><br> ${frameName}<br> ${stopName} Applied<br><br>`;
+                bomArray.push({ name: frameName, qty: finalSticksQty });
+                bomArray.push({ name: stopName, qty: finalSticksQty });
+                
+                if (isPrehung && !isBifold) {
+                    const actBore = getPillVal('activeBoreGroup');
+                    const hingeFinish = document.getElementById('hingeFinish').value;
+                    const hingeShape = document.getElementById('hingeShape').value;
+                    const hingeQty = isDouble ? (qty * 6) : (qty * 3);
+
+                    baseDesc += `<strong style="color:var(--brand-dark);">Bore, Hinge, & Hardware:</strong><br> Active Bore: ${actBore}<br>`;
+                    if (isDouble) baseDesc += `Inactive Bore: ${getPillVal('inactiveBoreGroup')}<br>`;
+                    baseDesc += `Backset is 2-3/8"<br> ${hingeFinish}<br> ${hingeShape}<br><br>`;
+                    
+                    bomArray.push({ name: `Hinge: ${hingeFinish} ${hingeShape}`, qty: hingeQty });
+                }
+
+                if (isDouble) {
+                    if (hand === 'No Hand') {
+                        const hwName = document.getElementById('ballCatch').value.split('|')[1];
+                        baseDesc += `<strong>Double Hardware:</strong><br>${hwName}<br><br>`;
+                        bomArray.push({ name: hwName, qty: qty });
+                    } else {
+                        let hwName, astragalName;
+                        if (h === '68') {
+                            hwName = document.getElementById('flushBolt68').value.split('|')[1];
+                            astragalName = "Astragal 6-8 1-3/8 Solid Pine W/Hd BoltPrep Reversable";
+                        } else {
+                            hwName = document.getElementById('flushBolt80').value.split('|')[1];
+                            astragalName = (hand === 'RHA') 
+                                ? "Astragal 8-0 RH 1-3/8 Solid Pine W/Hd BoltPrep (AIPSS808RIP)" 
+                                : "Astragal 8-0 LH 1-3/8 Solid Pine W/Hd BoltPrep (AIPSS808LIP)";
+                        }
+                        baseDesc += `<strong>Double Hardware:</strong><br>${hwName}<br>${astragalName}<br><br>`;
+                        bomArray.push({ name: hwName, qty: qty });
+                        bomArray.push({ name: astragalName, qty: qty });
+                    }
+                }
+            }
+
+            let addedServices = [];
+            document.querySelectorAll('.calc-trigger:checked').forEach(box => {
+                addedServices.push(box.dataset.name);
+            });
+            if (addedServices.length > 0) {
+                baseDesc += `<strong style="color:var(--brand-dark);">Services & Adders:</strong><br> ${addedServices.join('<br>')}`;
+            }
+
+            const quoteItem = {
+                id: Math.random().toString(36).substr(2, 9),
+                type: 'interior_door',
+                room: room,
+                description: baseDesc,
+                qty: qty,
+                price: currentQuoteData.price,
+                cost: currentQuoteData.cost,
+                profit: currentQuoteData.profit,
+                bom: bomArray
+            };
+
+            projectTally.push(quoteItem);
+            saveTally();
+
+            const toast = document.getElementById('toast');
+            toast.innerText = "Item added to Cart!";
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+            
+            document.getElementById('qtyInput').value = 1;
+            document.getElementById('roomInput').value = "";
+            
+            document.querySelectorAll('.calc-trigger:checked').forEach(box => {
+                if(!box.disabled) box.checked = false;
+            });
+            
+            updateCosting();
+        }
+
+        // --- Sidebar Logic ---
+        function renderSidebar() {
+            const listEl = document.getElementById('sidebarItemsList');
+            const countEl = document.getElementById('sidebarTotalCount');
+            const totalEl = document.getElementById('sidebarGrandTotal');
+            
+            listEl.innerHTML = '';
+            let grandTotal = 0;
+
+            if (projectTally.length === 0) {
+                listEl.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px 0; font-size: 0.9rem;">No items built yet.</div>';
+                countEl.innerText = '0 Items';
+                totalEl.innerText = '$0.00';
+                return;
+            }
+
+            projectTally.forEach((item, index) => {
+                let itemPrice = item.price || 0;
+                grandTotal += itemPrice;
+                const safeRoom = item.room ? item.room.replace(/"/g, '&quot;') : '';
+                const qty = item.qty || 1;
+                const desc = item.description || '';
+                
+                listEl.innerHTML += `
+                    <div class="cart-item">
+                        <div class="cart-item-header">
+                            <span class="cart-item-qty">${qty}x</span>
+                            <span class="cart-item-price">$${itemPrice.toFixed(2)}</span>
+                        </div>
+                        <input type="text" class="edit-room-input" value="${safeRoom}" placeholder="Room Name (e.g. Master Bed)" onchange="updateRoom(${index}, this.value)">
+                        <div class="cart-item-desc">${desc}</div>
+                        <div class="cart-item-actions">
+                            <button class="action-btn" onclick="duplicateItem(${index})">Duplicate</button>
+                            <button class="action-btn btn-delete" onclick="deleteItem(${index})">Remove</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            countEl.innerText = `${projectTally.length} Items`;
+            totalEl.innerText = '$' + grandTotal.toFixed(2);
+            
+            if (viewMode === 'fullquote') renderFullQuote();
+        }
+
+        function updateRoom(index, newRoomName) {
+            if (!projectTally[index]) return;
+            projectTally[index].room = newRoomName;
+            saveTally();
+        }
+
+        function duplicateItem(index) {
+            if (!projectTally[index]) return;
+            const copiedItem = JSON.parse(JSON.stringify(projectTally[index]));
+            copiedItem.id = Math.random().toString(36).substr(2, 9);
+            copiedItem.room = (copiedItem.room || "Item") + " (Copy)";
+            projectTally.push(copiedItem);
+            saveTally();
+            
+            setTimeout(() => {
+                const sidebarScroll = document.getElementById('sidebarItemsList');
+                sidebarScroll.scrollTop = sidebarScroll.scrollHeight;
+            }, 50);
+        }
+
+        function deleteItem(index) {
+            projectTally.splice(index, 1);
+            saveTally();
+        }
+
+        // --- FULL QUOTE OVERLAY LOGIC ---
+        function toggleFullQuote() {
+            const configView = document.getElementById('mainConfigView');
+            const quoteView = document.getElementById('fullQuoteView');
+            const btn = document.getElementById('btnToggleQuote');
+
+            if (viewMode === 'configurator') {
+                viewMode = 'fullquote';
+                configView.classList.add('hidden');
+                quoteView.style.display = 'block';
+                btn.innerText = "Back to Configurator";
+                renderFullQuote();
+            } else {
+                viewMode = 'configurator';
+                quoteView.style.display = 'none';
+                configView.classList.remove('hidden');
+                btn.innerText = "View Full Quote";
+            }
+        }
+
+        function switchQuoteTab(tabName) {
+            document.getElementById('tabCustomer').classList.toggle('active', tabName === 'customer');
+            document.getElementById('tabProduction').classList.toggle('active', tabName === 'production');
+            document.getElementById('contentCustomer').classList.toggle('hidden', tabName !== 'customer');
+            document.getElementById('contentProduction').classList.toggle('hidden', tabName !== 'production');
+        }
+
+        function copyText(btn, text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = btn.innerText;
+                btn.innerText = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+
+        function copyEntireTable(tableId, btn) {
+            let textToCopy = "";
+            
+            if (tableId === 'customerTable') {
+                textToCopy += "CUSTOMER PROPOSAL\n\n";
+                projectTally.forEach(item => {
+                    const roomName = item.room || "None Assigned";
+                    const plainDesc = (item.description || '').replace(/<br\s*[\/]?>/gi, '\n').replace(/<[^>]+>/g, '').trim();
+                    const unitPrice = (item.price || 0) / (item.qty || 1);
+                    textToCopy += `Room: ${roomName}\nDescription:\n${plainDesc}\nQty: ${item.qty || 1}\nUnit Price: $${unitPrice.toFixed(2)}\nTotal: $${(item.price || 0).toFixed(2)}\n\n`;
+                });
+                const grandTotal = document.getElementById('fullQuoteGrandTotal').innerText;
+                textToCopy += `GRAND TOTAL: ${grandTotal}`;
+            } else if (tableId === 'productionTable') {
+                textToCopy += "PRODUCTION BOM\n\n";
+                let aggregatedBOM = {};
+                projectTally.forEach(item => {
+                    if (item.bom && item.bom.length > 0) {
+                        item.bom.forEach(part => {
+                            if (!aggregatedBOM[part.name]) aggregatedBOM[part.name] = 0;
+                            aggregatedBOM[part.name] += part.qty;
+                        });
+                    }
+                });
+                const sortedBomKeys = Object.keys(aggregatedBOM).sort(); 
+                sortedBomKeys.forEach(partName => {
+                    textToCopy += `${partName} - Qty: ${aggregatedBOM[partName]}\n`;
+                });
+            }
+
+            copyText(btn, textToCopy);
+        }
+
+        function renderFullQuote() {
+            const custTbody = document.querySelector('#customerTable tbody');
+            const prodTbody = document.querySelector('#productionTable tbody');
+            custTbody.innerHTML = '';
+            prodTbody.innerHTML = '';
+
+            let grandTotal = 0;
+            let aggregatedBOM = {};
+
+            if (projectTally.length === 0) {
+                custTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);">No items configured yet.</td></tr>`;
+                prodTbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:30px; color:var(--text-muted);">No materials to order.</td></tr>`;
+                document.getElementById('fullQuoteGrandTotal').innerText = "$0.00";
+                return;
+            }
+
+            projectTally.forEach((item) => {
+                let itemPrice = item.price || 0;
+                let itemQty = item.qty || 1;
+                grandTotal += itemPrice;
+                const unitPrice = itemPrice / itemQty;
+                const roomName = item.room || "None Assigned";
+                const desc = item.description || '';
+
+                const plainDesc = desc.replace(/<br\s*[\/]?>/gi, '\n').replace(/<[^>]+>/g, '').trim();
+                const copyTextCust = `Room: ${roomName}\nDescription:\n${plainDesc}\nQty: ${itemQty}\nUnit Price: $${unitPrice.toFixed(2)}\nTotal: $${itemPrice.toFixed(2)}`;
+                const safeCopyTextCust = encodeURIComponent(copyTextCust);
+
+                custTbody.innerHTML += `
+                    <tr>
+                        <td><button class="btn-copy" onclick="copyText(this, decodeURIComponent('${safeCopyTextCust}'))">Copy</button></td>
+                        <td style="font-weight:700; color:var(--brand-primary);">${roomName}</td>
+                        <td style="line-height:1.5; color:var(--text-main); font-size:0.9rem;">${desc}</td>
+                        <td style="text-align:center; font-weight:bold;">${itemQty}</td>
+                        <td style="text-align:right;">$${unitPrice.toFixed(2)}</td>
+                        <td style="text-align:right; font-weight:bold; color:var(--brand-dark);">$${itemPrice.toFixed(2)}</td>
+                    </tr>
+                `;
+
+                if (item.bom && item.bom.length > 0) {
+                    item.bom.forEach(part => {
+                        if (!aggregatedBOM[part.name]) {
+                            aggregatedBOM[part.name] = 0;
+                        }
+                        aggregatedBOM[part.name] += part.qty;
+                    });
+                }
+            });
+
+            document.getElementById('fullQuoteGrandTotal').innerText = "$" + grandTotal.toFixed(2);
+
+            const sortedBomKeys = Object.keys(aggregatedBOM).sort(); 
+            sortedBomKeys.forEach(partName => {
+                const totalQty = aggregatedBOM[partName];
+                
+                const copyTextProd = `${partName} - Qty: ${totalQty}`;
+                const safeCopyTextProd = encodeURIComponent(copyTextProd);
+
+                prodTbody.innerHTML += `
+                    <tr>
+                        <td><button class="btn-copy" onclick="copyText(this, decodeURIComponent('${safeCopyTextProd}'))">Copy</button></td>
+                        <td style="font-weight:600; color:var(--brand-dark);">${partName}</td>
+                        <td style="text-align:center; font-weight:800; font-size:1.1rem; color:var(--brand-primary);">${totalQty}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        updateCosting();
+    </script>
+</body>
+</html>
